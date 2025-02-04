@@ -29,7 +29,6 @@ main :: proc() {
 	add_animation_state(&world, first_cat, {state = .IDLE, current_frame = 0, animation_speed = 8})
 	add_unlocked(&world, first_cat)
 
-
 	// second cat 
 	add_position(&world, second_cat, {x = 100, y = 200, is_returning = false})
 	add_sprite(
@@ -53,6 +52,7 @@ main :: proc() {
 	)
 	add_buttons(&world, first_cat, world.storage.positions[first_cat].y)
 	add_buttons(&world, second_cat, world.storage.positions[second_cat].y)
+	rl.GuiLoadStyle("./assets/candy.rgs")
 	for !rl.WindowShouldClose() {
 		rl.BeginDrawing()
 

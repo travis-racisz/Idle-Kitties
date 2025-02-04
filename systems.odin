@@ -63,13 +63,13 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 	buttons := make([]Button, 3)
 	button_width := 100
 	button_height := 30
-	spacing := 10
+	spacing := 50
 
 	// Create unlock button
 	buttons[0] = Button {
 		rect = rl.Rectangle {
 			x      = 100, // Align with entity starting position
-			y      = f32(entity_y_pos + 100), // Position below entity
+			y      = f32(entity_y_pos + 50), // Position below entity
 			width  = f32(button_width),
 			height = f32(button_height),
 		},
@@ -81,7 +81,7 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 	buttons[1] = Button {
 		rect = rl.Rectangle {
 			x = 100 + f32(button_width + spacing),
-			y = f32(entity_y_pos + 100),
+			y = f32(entity_y_pos + 50),
 			width = f32(button_width),
 			height = f32(button_height),
 		},
@@ -92,7 +92,7 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 	buttons[2] = Button {
 		rect = rl.Rectangle {
 			x = 200 + f32(button_width + spacing),
-			y = f32(entity_y_pos + 100),
+			y = f32(entity_y_pos + 50),
 			width = f32(button_width),
 			height = f32(button_height),
 		},
@@ -108,32 +108,38 @@ render_buttons_system :: proc(world: ^World) {
 
 	for entity in world.storage.entities {
 		for button in world.storage.buttons[entity] {
-			color := world.global_points >= button.cost ? rl.GREEN : rl.RED
-			rl.DrawRectangleRec(button.rect, color)
+
+			//rl.DrawRectangleRec(button.rect, color)
 
 			text := ""
 			switch button.type {
 			case .UNLOCK:
 				{
-					text := "unlock"
+					text = "unlock"
 				}
 			case .UPGRADEPOINTS:
 				{
 
-					text := "upgrade points"
+					text = "upgrade points"
 				}
 			case .UPGRADESPEED:
 				{
 
-					text := "upgrade speed"
+					text = "upgrade speed"
 				}
+
+			}
+
+			if button.cost > world.global_points {
+			}
+			if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
 
 			}
 
 			text_width := rl.MeasureText(strings.clone_to_cstring(text), 20)
 			text_x := i32(button.rect.x + (button.rect.width - f32(text_width)) / 2)
 			text_y := i32(button.rect.y + (button.rect.height - 20) / 2)
-			rl.DrawText(strings.clone_to_cstring(text), text_x, text_y, 20, rl.BLACK)
+			// rl.DrawText(strings.clone_to_cstring(text), text_x, text_y, 10, rl.BLACK)
 		}
 
 

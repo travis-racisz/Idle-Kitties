@@ -33,13 +33,14 @@ World_Storage :: struct {
 }
 
 Button :: struct {
-	rect: rl.Rectangle,
-	cost: i32,
-	type: enum {
+	rect:     rl.Rectangle,
+	cost:     i32,
+	type:     enum {
 		UNLOCK,
 		UPGRADESPEED,
 		UPGRADEPOINTS,
 	},
+	disabled: bool,
 }
 
 AnimationState :: struct {
