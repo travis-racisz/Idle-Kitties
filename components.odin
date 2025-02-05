@@ -5,8 +5,8 @@ import rl "vendor:raylib"
 Entity :: distinct u16
 
 Upgrade :: struct {
-	velocity_upgrades: i32,
-	points_upgrades:   i32,
+	velocity_upgrades: i32 ,
+	points_upgrades:   i32 ,
 }
 
 World :: struct {
