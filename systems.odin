@@ -36,6 +36,10 @@ create_world :: proc() -> World {
 			entities = make([dynamic]Entity),
 			animation_states = make(map[Entity]AnimationState),
 			sprites = make(map[Entity]Sprite),
+			unlocked = make(map[Entity]Unlocked),
+			points_contributers = make(map[Entity]PointsContributer),
+			buttons = make(map[Entity][]Button),
+			upgrades = make(map[Entity]Upgrade),
 		},
 	}
 
@@ -85,8 +89,8 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 			width = f32(button_width),
 			height = f32(button_height),
 		},
-		cost = 1 *
-		world.storage.upgrades[entity].velocity_upgrades + 1,
+		cost = 1 * world.storage.upgrades[entity].velocity_upgrades +
+		1,
 		type = .UPGRADESPEED,
 	}
 	buttons[2] = Button {
@@ -96,8 +100,7 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 			width = f32(button_width),
 			height = f32(button_height),
 		},
-		cost = (1 *
-		world.storage.upgrades[entity].points_upgrades + 1),
+		cost = (1 * world.storage.upgrades[entity].points_upgrades + 1),
 		type = .UPGRADEPOINTS,
 	}
 
@@ -115,25 +118,25 @@ render_buttons_system :: proc(world: ^World) {
 			switch button.type {
 			case .UNLOCK:
 				{
-					if world.storage.unlocked[entity]{ 
+					if world.storage.unlocked[entity] {
 						break
-					} else { 
+					} else {
 
 						text = fmt.tprint("unlock: ", button.cost)
 						if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
 							if button.cost <= world.global_points {
-					
+
 								add_unlocked(world, entity)
-								add_velocity(world, entity, {2,0})
+								add_velocity(world, entity, {2, 0})
 
 								cost := world.global_points
 								cost -= button.cost
 								world.global_points = cost
-			
+
 							}
 						}
 					}
-					
+
 				}
 			case .UPGRADEPOINTS:
 				{
@@ -141,24 +144,24 @@ render_buttons_system :: proc(world: ^World) {
 					text = fmt.tprintf("upgrade points: %d", button.cost)
 					if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
 						if button.cost <= world.global_points {
-				
+
 							points := world.storage.points_contributers[entity]
 							points.amount += 1
 							world.storage.points_contributers[entity] = points
-			
-		
+
+
 							upgrade := world.storage.upgrades[entity]
 							upgrade.points_upgrades += 1
 							world.storage.upgrades[entity] = upgrade
-		
+
 							world_points := world.global_points
 							world_points -= button.cost
 							world.global_points = world_points
-		
-							cost := button.cost 
+
+							cost := button.cost
 							cost += world.storage.upgrades[entity].points_upgrades
 							button.cost = cost
-		
+
 						}
 					}
 				}
@@ -168,34 +171,30 @@ render_buttons_system :: proc(world: ^World) {
 					text = fmt.tprintf("upgrade speed: %d", button.cost)
 					if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
 						if button.cost <= world.global_points {
-				
+
 							velocity := world.storage.velocities[entity]
 							velocity.x += 1
 							world.storage.velocities[entity] = velocity
-			
-		
+
+
 							upgrade := world.storage.upgrades[entity]
 							upgrade.velocity_upgrades += 1
 							world.storage.upgrades[entity] = upgrade
-		
+
 							points := world.global_points
 							points -= button.cost
 							world.global_points = points
-		
-							cost := button.cost 
+
+							cost := button.cost
 							cost += world.storage.upgrades[entity].velocity_upgrades
 							button.cost = cost
-		
+
 						}
 					}
 				}
 
 			}
 
-		
-
-			
-			
 
 			text_width := rl.MeasureText(strings.clone_to_cstring(text), 20)
 			text_x := i32(button.rect.x + (button.rect.width - f32(text_width)) / 2)
@@ -213,7 +212,7 @@ render_buttons_system :: proc(world: ^World) {
 render_system :: proc(world: ^World) {
 	for entity in world.storage.entities {
 		_, ok := world.storage.unlocked[entity]
-		color := ok ? rl.BLACK : rl.BLACK
+		color := ok ? rl.WHITE : rl.BLACK
 
 		// draw buttons under each entity 
 
