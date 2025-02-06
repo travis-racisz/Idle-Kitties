@@ -3,6 +3,21 @@ package main
 import "core:fmt"
 import "core:strings"
 import rl "vendor:raylib"
+
+
+ScreenStates :: enum {
+	TITLE,
+	OPTIONS,
+	GAME,
+}
+
+ScreenState :: struct {
+	current_screen_state:  ScreenStates,
+	previous_screen_state: ScreenStates,
+}
+
+should_game_close: bool
+screen_state: ScreenState
 world := create_world()
 camera := rl.Camera2D {
 	target = rl.Vector2{0, 0},
@@ -44,7 +59,20 @@ jumping_textures := JumpingTextures {
 	"./assets/AllCatsDemo/AllCatsDemo/Xmas/JumpCatttt.png",
 }
 
+ball_texture: rl.Texture
+collect_sound: rl.Sound
+music: rl.Sound
+music_volume: f32
+
+
 main :: proc() {
+	fmt.println(world)
+	music_volume = .5
+	screen_state = ScreenState {
+		current_screen_state  = .TITLE,
+		previous_screen_state = .TITLE,
+	}
+	should_game_close = false
 	rl.InitWindow(rl.GetScreenHeight(), rl.GetScreenHeight(), "Run Back Experiment")
 	rl.SetTargetFPS(60)
 
@@ -52,64 +80,81 @@ main :: proc() {
 	defer rl.CloseWindow()
 
 	rl.GuiLoadStyle("./assets/candy.rgs")
-	world.global_points = 100000
-
+	init_audio()
 	initialize_cats()
 
-	//rl.SetMouseScale(.65, .655)
 
-	for !rl.WindowShouldClose() {
+	//rl.SetMouseScale(.65, .655)
+	ball_texture = rl.LoadTexture("./assets/CatMaterialsDEMO/CatMaterialsDEMO/BlueBall.gif")
+	for !should_game_close {
 
 		mouse_pos := rl.GetMousePosition()
 		rl.BeginDrawing()
 
-		rl.ClearBackground(rl.GRAY)
+		if !rl.IsSoundPlaying(music) {
 
-		rl.BeginMode2D(camera)
-		scroll := rl.GetMouseWheelMove()
-		if scroll < 0 {
-			fmt.println(camera.offset.y)
-			if camera.offset.y <= CAMERA_MIN_HEIGHT {
-			} else {
+			rl.PlaySound(music)
+		}
 
-				camera.offset -= {0.0, 40.0}
-				rl.SetMouseOffset(i32(camera.offset.x), i32(-camera.offset.y))
+		switch screen_state.current_screen_state {
+		case .TITLE:
+			build_title_screen()
+		case .OPTIONS:
+			build_options_screen()
+		case .GAME:
+			rl.ClearBackground(rl.GRAY)
+
+			rl.BeginMode2D(camera)
+			if rl.IsKeyPressed(.ESCAPE) {
+				screen_state.previous_screen_state = screen_state.current_screen_state
+				screen_state.current_screen_state = .OPTIONS
+			}
+			scroll := rl.GetMouseWheelMove()
+			if scroll < 0 {
+				if camera.offset.y <= CAMERA_MIN_HEIGHT {
+				} else {
+
+					camera.offset -= {0.0, 40.0}
+					rl.SetMouseOffset(i32(camera.offset.x), i32(-camera.offset.y))
+
+				}
+
+			} else if scroll > 0 {
+				if camera.offset.y < CAMERA_MAX_HEIGHT {
+
+					camera.offset += {0.0, 40.0}
+					rl.SetMouseOffset(i32(camera.offset.x), i32(-camera.offset.y))
+				}
 
 			}
 
-		} else if scroll > 0 {
-			if camera.offset.y < CAMERA_MAX_HEIGHT {
 
-				camera.offset += {0.0, 40.0}
-				rl.SetMouseOffset(i32(camera.offset.x), i32(-camera.offset.y))
+			boundary := rl.Rectangle {
+				x      = 80,
+				y      = 50,
+				width  = 1100,
+				height = 1100,
 			}
-
-		}
-
-
-		boundary := rl.Rectangle {
-			x      = 80,
-			y      = 50,
-			width  = 1100,
-			height = 1100,
-		}
-		rl.DrawRectangleLinesEx(boundary, 3.0, rl.BLACK)
+			rl.DrawRectangleLinesEx(boundary, 3.0, rl.BLACK)
 
 
-		render_system(&world)
-		render_buttons_system(&world)
+			render_system(&world)
+			render_buttons_system(&world)
 
 
-		for entity in world.storage.entities {
-			unlocked, ok := world.storage.unlocked[entity]
-			if ok {
-				movement_system(&world, entity)
+			for entity in world.storage.entities {
+				unlocked, ok := world.storage.unlocked[entity]
+				if ok {
+					movement_system(&world, entity)
+				}
 			}
-		}
-		score_text := strings.clone_to_cstring(fmt.tprintf("points: %d", world.global_points))
-		rl.DrawText(score_text, 10, 10, 20, rl.WHITE)
+			score_text := strings.clone_to_cstring(fmt.tprintf("points: %d", world.global_points))
+			rl.DrawText(score_text, 10, 10, 20, rl.WHITE)
 
-		rl.EndMode2D()
+			rl.EndMode2D()
+		}
+
+
 		rl.EndDrawing()
 		defer free_all(context.temp_allocator)
 
@@ -157,11 +202,22 @@ initialize_cats :: proc() {
 				move_right_texture = rl.LoadTexture(strings.clone_to_cstring(jumping_textures[i])),
 			},
 			true,
-			PointsContributer{amount = 1, is_active = true},
+			PointsContributer{amount = i32((i + 1) * 10), is_active = true},
 			AnimationState{state = .IDLE, current_frame = 0, animation_speed = 8},
 		)
-		add_buttons(&world, entity, world.storage.positions[entity].y)
+		add_buttons(&world, entity, world.storage.positions[entity].y, (i32(i) * 100))
 	}
 
+
+}
+
+
+init_audio :: proc() {
+	rl.InitAudioDevice()
+	if rl.IsAudioDeviceReady() {
+		collect_sound = rl.LoadSound("./assets/soft_click.wav")
+		music = rl.LoadSound("./assets/groovy-music.mp3")
+		rl.SetSoundVolume(music, music_volume)
+	}
 
 }

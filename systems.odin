@@ -63,7 +63,7 @@ add_points_contributer :: proc(
 	world.storage.points_contributers[entity] = points_contributer
 }
 
-add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
+add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32, unlock_cost: i32) {
 	buttons := make([]Button, 3)
 	button_width := 150
 	button_height := 30
@@ -77,7 +77,7 @@ add_buttons :: proc(world: ^World, entity: Entity, entity_y_pos: i32) {
 			width  = f32(button_width),
 			height = f32(button_height),
 		},
-		cost = 100,
+		cost = unlock_cost,
 		type = .UNLOCK,
 	}
 
@@ -143,24 +143,30 @@ render_buttons_system :: proc(world: ^World) {
 
 					text = fmt.tprintf("upgrade points: %d", button.cost)
 					if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
-						if button.cost <= world.global_points {
+						if !world.storage.unlocked[entity] {
 
-							points := world.storage.points_contributers[entity]
-							points.amount += 1
-							world.storage.points_contributers[entity] = points
+						} else {
+
+							if button.cost <= world.global_points {
+
+								points := world.storage.points_contributers[entity]
+								points.amount += 10
+								world.storage.points_contributers[entity] = points
 
 
-							upgrade := world.storage.upgrades[entity]
-							upgrade.points_upgrades += 1
-							world.storage.upgrades[entity] = upgrade
+								upgrade := world.storage.upgrades[entity]
+								upgrade.points_upgrades += 1
+								world.storage.upgrades[entity] = upgrade
 
-							world_points := world.global_points
-							world_points -= button.cost
-							world.global_points = world_points
+								world_points := world.global_points
+								world_points -= button.cost
+								world.global_points = world_points
 
-							cost := button.cost
-							cost += world.storage.upgrades[entity].points_upgrades
-							button.cost = cost
+								cost := button.cost
+								cost += world.storage.upgrades[entity].points_upgrades
+								button.cost = cost
+
+							}
 
 						}
 					}
@@ -170,25 +176,30 @@ render_buttons_system :: proc(world: ^World) {
 
 					text = fmt.tprintf("upgrade speed: %d", button.cost)
 					if rl.GuiButton(button.rect, strings.clone_to_cstring(text)) {
-						if button.cost <= world.global_points {
+						if !world.storage.unlocked[entity] {
 
-							velocity := world.storage.velocities[entity]
-							velocity.x += 1
-							world.storage.velocities[entity] = velocity
+						} else {
+
+							if button.cost <= world.global_points {
+
+								velocity := world.storage.velocities[entity]
+								velocity.x += 1
+								world.storage.velocities[entity] = velocity
 
 
-							upgrade := world.storage.upgrades[entity]
-							upgrade.velocity_upgrades += 1
-							world.storage.upgrades[entity] = upgrade
+								upgrade := world.storage.upgrades[entity]
+								upgrade.velocity_upgrades += 1
+								world.storage.upgrades[entity] = upgrade
 
-							points := world.global_points
-							points -= button.cost
-							world.global_points = points
+								points := world.global_points
+								points -= button.cost
+								world.global_points = points
 
-							cost := button.cost
-							cost += world.storage.upgrades[entity].velocity_upgrades
-							button.cost = cost
+								cost := button.cost
+								cost += world.storage.upgrades[entity].velocity_upgrades
+								button.cost = cost
 
+							}
 						}
 					}
 				}
@@ -370,15 +381,19 @@ movement_system :: proc(world: ^World, entity: Entity) {
 		f32(world.storage.positions[entity].x),
 		f32(world.storage.positions[entity].y),
 	}
+	collect_ball(world)
 
 	is_returning := world.storage.positions[entity].is_returning
 	has_collected_point := world.storage.positions[entity].has_collected_point
 	velocity: f32
 
 	if !is_returning {
-		// Moving right towards 500
+		// Moving right towards 1000
+
 		if current_pos.x >= 1000.0 {
 			// Reached rightmost point, start returning
+			// undraw ball texture and play collection noise
+
 			is_returning = true
 			has_collected_point = true
 			velocity = f32(-world.storage.velocities[entity].x)
@@ -389,8 +404,11 @@ movement_system :: proc(world: ^World, entity: Entity) {
 		// Moving left towards 100
 		if current_pos.x <= 100.0 {
 			if has_collected_point {
+				// play another noise for adding points 
+				// redraw the ball texture
 				world.global_points += world.storage.points_contributers[entity].amount
 			}
+
 			is_returning = false
 			has_collected_point = false
 			velocity = f32(world.storage.velocities[entity].x)
@@ -413,4 +431,31 @@ movement_system :: proc(world: ^World, entity: Entity) {
 	// Update the world state
 	world.storage.positions[entity] = new_pos
 	world.storage.animation_states[entity] = anim_state
+}
+
+
+collect_ball :: proc(world: ^World) {
+	for entity in world.storage.entities {
+		if !world.storage.positions[entity].is_returning {
+			if world.storage.positions[entity].x == 980.0 {
+				rl.PlaySound(collect_sound)
+			}
+			rl.DrawTextureEx(
+				ball_texture,
+				rl.Vector2{1000, f32(world.storage.positions[entity].y - 50)},
+				0,
+				5,
+				rl.WHITE,
+			)
+		}
+
+		if world.storage.positions[entity].x <= 100.0 {
+			if world.storage.positions[entity].has_collected_point {
+				// play another noise for adding points 
+				// redraw the ball texture
+				rl.DrawTextureEx(ball_texture, rl.Vector2{1000, 50}, 0, 5, rl.BLANK)
+				rl.PlaySound(collect_sound)
+			}
+		}
+	}
 }
