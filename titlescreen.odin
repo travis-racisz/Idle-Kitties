@@ -21,7 +21,7 @@ build_title_screen :: proc() {
 			height = BUTTON_HEIGHT,
 			width = BUTTON_WIDTH,
 		},
-		"Start",
+		"New Game",
 	) {
 		screen_state.previous_screen_state = screen_state.current_screen_state
 		screen_state.current_screen_state = .GAME

@@ -66,7 +66,6 @@ music_volume: f32
 
 
 main :: proc() {
-	fmt.println(world)
 	music_volume = .5
 	screen_state = ScreenState {
 		current_screen_state  = .TITLE,
@@ -82,9 +81,10 @@ main :: proc() {
 	rl.GuiLoadStyle("./assets/candy.rgs")
 	init_audio()
 	initialize_cats()
+	first_shader := rl.LoadShader("", "./shaders/crt.glsl")
+	shader_loc := rl.GetShaderLocation(first_shader, "uTime")
+	uRes := rl.GetShaderLocation(first_shader, "uRes")
 
-
-	//rl.SetMouseScale(.65, .655)
 	ball_texture = rl.LoadTexture("./assets/CatMaterialsDEMO/CatMaterialsDEMO/BlueBall.gif")
 	for !should_game_close {
 
@@ -135,9 +135,20 @@ main :: proc() {
 				width  = 1100,
 				height = 1100,
 			}
+			u_time := f32(rl.GetTime())
+			res := rl.GetScreenWidth() * rl.GetScreenHeight()
+			rl.SetShaderValue(first_shader, shader_loc, &u_time, .FLOAT)
+			rl.SetShaderValue(first_shader, uRes, &res, .INT)
+			rl.BeginShaderMode(first_shader)
+
+			rl.DrawRectangleV(
+				{0, 0},
+				{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())},
+				rl.WHITE,
+			)
+			rl.EndShaderMode()
+
 			rl.DrawRectangleLinesEx(boundary, 3.0, rl.BLACK)
-
-
 			render_system(&world)
 			render_buttons_system(&world)
 
@@ -153,7 +164,6 @@ main :: proc() {
 
 			rl.EndMode2D()
 		}
-
 
 		rl.EndDrawing()
 		defer free_all(context.temp_allocator)

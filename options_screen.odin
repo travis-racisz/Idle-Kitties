@@ -22,7 +22,7 @@ build_options_screen :: proc() {
 	// build options like music volume
 	music_volume_slider := rl.GuiSliderBar(slider, "Music Volume", "100", &music_volume, 0, 1)
 	rl.SetSoundVolume(music, music_volume)
-	if rl.GuiButton(rl.Rectangle{x = 100, y = 0, height = 100, width = 200}, "Back") {
+	if rl.GuiButton(rl.Rectangle{x = 100, y = 50, height = 100, width = 200}, "Back") {
 
 		screen_state.current_screen_state = screen_state.previous_screen_state
 		screen_state.previous_screen_state = .OPTIONS
@@ -37,6 +37,19 @@ build_options_screen :: proc() {
 
 	if rl.GuiButton(save_game, "Save Game") {
 		create_save_game(&world)
+	}
+
+	if rl.GuiButton(
+		rl.Rectangle {
+			x = f32(rl.GetScreenWidth() / 2 - 100),
+			y = f32(rl.GetScreenHeight() / 2 + 350),
+			height = 100,
+			width = 200,
+		},
+		"Exit",
+	) {
+		should_game_close = true
+
 	}
 
 
