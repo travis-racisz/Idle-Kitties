@@ -1,5 +1,42 @@
 package main
+import "core:encoding/json"
+import "core:fmt"
+import "core:os"
 import rl "vendor:raylib"
+
+
+read_config_file :: proc() {
+	// read the file to get music volume and other config options 
+	// apply them 
+	// if no file exists create one 
+	if !os.exists("./options.json") {
+		fmt.print("writting file")
+		data, err := json.marshal("music_volume: .5")
+
+		os.write_entire_file("options.json", data)
+
+	} else {
+		if data, ok := os.read_entire_file_from_filename("./options.json"); ok {
+			fmt.println("read file")
+			if err := json.unmarshal(data, &options); err != nil {
+				fmt.println(err, "err")
+
+
+			}
+		}
+
+	}
+
+}
+
+write_config_file :: proc() {
+
+	data, err := json.marshal(options)
+
+	os.write_entire_file("options.json", data)
+
+}
+
 
 build_options_screen :: proc() {
 	rl.DrawRectangleRec(
@@ -20,8 +57,15 @@ build_options_screen :: proc() {
 	}
 
 	// build options like music volume
-	music_volume_slider := rl.GuiSliderBar(slider, "Music Volume", "100", &music_volume, 0, 1)
-	rl.SetSoundVolume(music, music_volume)
+	music_volume_slider := rl.GuiSliderBar(
+		slider,
+		"Music Volume",
+		"100",
+		&options.music_volume,
+		0,
+		1,
+	)
+	rl.SetSoundVolume(music, options.music_volume)
 	if rl.GuiButton(rl.Rectangle{x = 100, y = 50, height = 100, width = 200}, "Back") {
 
 		screen_state.current_screen_state = screen_state.previous_screen_state

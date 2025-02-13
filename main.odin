@@ -1,8 +1,13 @@
 package main
 
 import "core:fmt"
+import "core:math/rand"
 import "core:strings"
 import rl "vendor:raylib"
+
+Options :: struct {
+	music_volume: f32,
+}
 
 
 ScreenStates :: enum {
@@ -16,6 +21,7 @@ ScreenState :: struct {
 	previous_screen_state: ScreenStates,
 }
 
+options: Options
 should_game_close: bool
 screen_state: ScreenState
 world := create_world()
@@ -30,6 +36,15 @@ CAMERA_MIN_HEIGHT :: -1500
 
 IdleTextures :: [11]string
 JumpingTextures :: [11]string
+MusicTracks :: [4]cstring
+
+
+music_tracks := MusicTracks {
+	"./assets/music/groovy-music.mp3",
+	"./assets/music/for-her-chill-upbeat-summel-travel-vlog-and-ig-music-royalty-free-use-202298.mp3",
+	"./assets/music/nightfall-future-bass-music-228100.mp3",
+	"./assets/music/vlog-music-beat-trailer-showreel-promo-background-intro-theme-274290.mp3",
+}
 
 idle_textures := IdleTextures {
 	"./assets/AllCatsDemo/AllCatsDemo/BatmanCatFree/IdleCatt.png",
@@ -62,11 +77,11 @@ jumping_textures := JumpingTextures {
 ball_texture: rl.Texture
 collect_sound: rl.Sound
 music: rl.Sound
+random_song: rl.Sound
 music_volume: f32
 
 
 main :: proc() {
-	music_volume = .5
 	screen_state = ScreenState {
 		current_screen_state  = .TITLE,
 		previous_screen_state = .TITLE,
@@ -78,12 +93,11 @@ main :: proc() {
 	rl.SetConfigFlags({.FULLSCREEN_MODE, .WINDOW_RESIZABLE})
 	defer rl.CloseWindow()
 
+	read_config_file()
 	rl.GuiLoadStyle("./assets/candy.rgs")
 	init_audio()
 	initialize_cats()
-	first_shader := rl.LoadShader("", "./shaders/crt.glsl")
-	shader_loc := rl.GetShaderLocation(first_shader, "uTime")
-	uRes := rl.GetShaderLocation(first_shader, "uRes")
+	defer write_config_file()
 
 	ball_texture = rl.LoadTexture("./assets/CatMaterialsDEMO/CatMaterialsDEMO/BlueBall.gif")
 	for !should_game_close {
@@ -92,9 +106,13 @@ main :: proc() {
 		rl.BeginDrawing()
 
 		if !rl.IsSoundPlaying(music) {
-
+			song_index := rand.int31_max(4)
+			music = rl.LoadSound(music_tracks[song_index])
 			rl.PlaySound(music)
+			rl.SetSoundVolume(music, options.music_volume)
+
 		}
+
 
 		switch screen_state.current_screen_state {
 		case .TITLE:
@@ -135,18 +153,7 @@ main :: proc() {
 				width  = 1100,
 				height = 1100,
 			}
-			u_time := f32(rl.GetTime())
-			res := rl.GetScreenWidth() * rl.GetScreenHeight()
-			rl.SetShaderValue(first_shader, shader_loc, &u_time, .FLOAT)
-			rl.SetShaderValue(first_shader, uRes, &res, .INT)
-			rl.BeginShaderMode(first_shader)
 
-			rl.DrawRectangleV(
-				{0, 0},
-				{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())},
-				rl.WHITE,
-			)
-			rl.EndShaderMode()
 
 			rl.DrawRectangleLinesEx(boundary, 3.0, rl.BLACK)
 			render_system(&world)
@@ -160,7 +167,8 @@ main :: proc() {
 				}
 			}
 			score_text := strings.clone_to_cstring(fmt.tprintf("points: %d", world.global_points))
-			rl.DrawText(score_text, 10, 10, 20, rl.WHITE)
+			fmt.println(camera.offset.y)
+			rl.DrawText(score_text, i32(100), i32(camera.offset.y * -1), 60, rl.BLACK)
 
 			rl.EndMode2D()
 		}
@@ -212,7 +220,7 @@ initialize_cats :: proc() {
 				move_right_texture = rl.LoadTexture(strings.clone_to_cstring(jumping_textures[i])),
 			},
 			true,
-			PointsContributer{amount = i32((i + 1) * 10), is_active = true},
+			PointsContributer{amount = i32((i + 1) * 2), is_active = true},
 			AnimationState{state = .IDLE, current_frame = 0, animation_speed = 8},
 		)
 		add_buttons(&world, entity, world.storage.positions[entity].y, (i32(i) * 100))
@@ -226,8 +234,8 @@ init_audio :: proc() {
 	rl.InitAudioDevice()
 	if rl.IsAudioDeviceReady() {
 		collect_sound = rl.LoadSound("./assets/soft_click.wav")
-		music = rl.LoadSound("./assets/groovy-music.mp3")
-		rl.SetSoundVolume(music, music_volume)
+		music = rl.LoadSound("./assets/music/groovy-music.mp3")
+		rl.SetSoundVolume(music, options.music_volume)
 	}
 
 }

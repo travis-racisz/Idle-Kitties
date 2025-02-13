@@ -150,7 +150,7 @@ render_buttons_system :: proc(world: ^World) {
 							if button.cost <= world.global_points {
 
 								points := world.storage.points_contributers[entity]
-								points.amount += 10
+								points.amount += 2
 								world.storage.points_contributers[entity] = points
 
 
