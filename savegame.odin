@@ -22,6 +22,44 @@ SaveData_JSON :: struct {
 	storage:        Save_Storage_JSON,
 }
 
+Success_Message :: struct {
+	show:  bool,
+	timer: f32,
+}
+
+success_message_state := Success_Message {
+	show  = false,
+	timer = 0,
+}
+
+show_success_message :: proc() {
+	success_message_state.show = true
+	success_message_state.timer = 0
+}
+
+update_success_message :: proc() {
+	if success_message_state.show {
+		success_message_state.timer += rl.GetFrameTime()
+		if success_message_state.timer >= 1.0 {
+			success_message_state.show = false
+		}
+	}
+}
+
+render_success_message :: proc() {
+	if success_message_state.show {
+		success_message := rl.Rectangle {
+			x      = f32(rl.GetScreenWidth() / 2 - 250),
+			y      = 150,
+			width  = 500,
+			height = 250,
+		}
+		rl.GuiSetStyle(.TEXTBOX, 14, i32(rl.GuiTextAlignmentVertical.TEXT_ALIGN_MIDDLE))
+		rl.GuiTextBox(success_message, "Successfully Saved Game", 60, false)
+	}
+}
+
+
 // Convert World_Storage to JSON-friendly structure
 storage_to_json :: proc(storage: World_Storage) -> Save_Storage_JSON {
 	json_storage := Save_Storage_JSON {
@@ -104,7 +142,9 @@ create_save_game :: proc(world: ^World) {
 	}
 
 	if data, err := json.marshal(save_data); err == nil {
-		os.write_entire_file("save_game.json", data)
+		if os.write_entire_file("save_game.json", data) {
+			show_success_message()
+		}
 	} else {
 		fmt.eprintln(err)
 	}

@@ -72,16 +72,19 @@ build_options_screen :: proc() {
 		screen_state.previous_screen_state = .OPTIONS
 	}
 
-	save_game := rl.Rectangle {
-		x      = f32(rl.GetScreenWidth() / 2 - 100),
-		y      = f32(rl.GetScreenHeight() / 2 + 200),
-		height = 100,
-		width  = 200,
+	if screen_state.previous_screen_state == .GAME {
+
+		save_game := rl.Rectangle {
+			x      = f32(rl.GetScreenWidth() / 2 - 100),
+			y      = f32(rl.GetScreenHeight() / 2 + 200),
+			height = 100,
+			width  = 200,
+		}
+		if rl.GuiButton(save_game, "Save Game") {
+			create_save_game(&world)
+		}
 	}
 
-	if rl.GuiButton(save_game, "Save Game") {
-		create_save_game(&world)
-	}
 
 	if rl.GuiButton(
 		rl.Rectangle {

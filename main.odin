@@ -21,6 +21,12 @@ ScreenState :: struct {
 	previous_screen_state: ScreenStates,
 }
 
+FallingCat :: struct {
+	x:             i32,
+	y:             i32,
+	texture_index: i32,
+}
+
 options: Options
 should_game_close: bool
 screen_state: ScreenState
@@ -33,7 +39,15 @@ camera := rl.Camera2D {
 
 CAMERA_MAX_HEIGHT :: 0
 CAMERA_MIN_HEIGHT :: -1500
+FALLING_CAT_COUNT :: 100
+SCREEN_TOP :: -100
+FALLING_SPEED :: 5.0
+MIN_X_POSITION :: 50
+MAX_X_POSITION :: 750
 
+
+title_cats: [FALLING_CAT_COUNT]FallingCat
+title_textures: [dynamic]rl.Texture
 IdleTextures :: [11]string
 JumpingTextures :: [11]string
 MusicTracks :: [4]cstring
@@ -87,23 +101,29 @@ main :: proc() {
 		previous_screen_state = .TITLE,
 	}
 	should_game_close = false
-	rl.InitWindow(rl.GetScreenHeight(), rl.GetScreenHeight(), "Run Back Experiment")
+	rl.InitWindow(rl.GetScreenHeight(), rl.GetScreenHeight(), "Idle Kitties!")
 	rl.SetTargetFPS(60)
 
-	rl.SetConfigFlags({.FULLSCREEN_MODE, .WINDOW_RESIZABLE})
+	rl.SetConfigFlags(
+		{.FULLSCREEN_MODE, .WINDOW_RESIZABLE, .WINDOW_UNDECORATED, .WINDOW_MAXIMIZED},
+	)
 	defer rl.CloseWindow()
 
 	read_config_file()
 	rl.GuiLoadStyle("./assets/candy.rgs")
 	init_audio()
 	initialize_cats()
+	init_title_cats()
+	init_background()
 	defer write_config_file()
 
 	ball_texture = rl.LoadTexture("./assets/CatMaterialsDEMO/CatMaterialsDEMO/BlueBall.gif")
 	for !should_game_close {
 
+
 		mouse_pos := rl.GetMousePosition()
 		rl.BeginDrawing()
+
 
 		if !rl.IsSoundPlaying(music) {
 			song_index := rand.int31_max(4)
@@ -117,11 +137,17 @@ main :: proc() {
 		switch screen_state.current_screen_state {
 		case .TITLE:
 			build_title_screen()
+			update_title_cats()
+			render_title_cats()
 		case .OPTIONS:
 			build_options_screen()
+			update_success_message()
+			render_success_message()
 		case .GAME:
 			rl.ClearBackground(rl.GRAY)
 
+			update_background()
+			render_background()
 			rl.BeginMode2D(camera)
 			if rl.IsKeyPressed(.ESCAPE) {
 				screen_state.previous_screen_state = screen_state.current_screen_state
@@ -147,15 +173,6 @@ main :: proc() {
 			}
 
 
-			boundary := rl.Rectangle {
-				x      = 80,
-				y      = 50,
-				width  = 1100,
-				height = 1100,
-			}
-
-
-			rl.DrawRectangleLinesEx(boundary, 3.0, rl.BLACK)
 			render_system(&world)
 			render_buttons_system(&world)
 
@@ -167,9 +184,7 @@ main :: proc() {
 				}
 			}
 			score_text := strings.clone_to_cstring(fmt.tprintf("points: %d", world.global_points))
-			fmt.println(camera.offset.y)
-			rl.DrawText(score_text, i32(100), i32(camera.offset.y * -1), 60, rl.BLACK)
-
+			rl.DrawText(score_text, i32(100), i32(camera.offset.y * -1) + 50, 60, rl.BLACK)
 			rl.EndMode2D()
 		}
 
@@ -238,4 +253,46 @@ init_audio :: proc() {
 		rl.SetSoundVolume(music, options.music_volume)
 	}
 
+}
+
+
+init_title_cats :: proc() {
+	// Load textures once
+	for texture_path in idle_textures {
+		texture := rl.LoadTexture(strings.clone_to_cstring(texture_path))
+		append(&title_textures, texture)
+	}
+
+	// Initialize cats with random positions
+	for &cat, i in &title_cats {
+		cat.x = i32(rand.int31_max(i32(rl.GetScreenWidth()) - 50))
+		cat.y = -i32(rand.int31_max(1000)) // Random starting heights
+		cat.texture_index = i32(rand.int31_max(i32(len(title_textures))))
+	}
+}
+
+update_title_cats :: proc() {
+	FALL_SPEED :: 2
+	for &cat in &title_cats {
+		cat.y += FALL_SPEED
+
+		// Reset to top when cat reaches bottom
+		if cat.y > rl.GetScreenHeight() {
+			cat.y = -50
+			cat.x = i32(rand.int31_max(i32(rl.GetScreenWidth()) - 50))
+			cat.texture_index = i32(rand.int31_max(i32(len(title_textures))))
+		}
+	}
+}
+
+render_title_cats :: proc() {
+	for cat in title_cats {
+		texture := title_textures[cat.texture_index]
+		rl.DrawTextureRec(
+			texture,
+			{x = 0, y = 0, height = f32(texture.height), width = f32(texture.width / 7)},
+			{f32(cat.x), f32(cat.y)},
+			rl.WHITE,
+		)
+	}
 }
