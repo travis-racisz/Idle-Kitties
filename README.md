@@ -1,4 +1,5 @@
 # Idle Kitties!
+[Screencast From 2025-02-15 22-31-49.webm](https://github.com/user-attachments/assets/0ae7436b-2e86-4222-8101-60ab56339d46)
 
 A delightful idle game featuring a collection of animated cats, each contributing to your point total in their own unique way.
 
